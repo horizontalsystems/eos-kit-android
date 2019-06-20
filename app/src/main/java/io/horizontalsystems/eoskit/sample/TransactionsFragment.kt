@@ -7,12 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.horizontalsystems.eoskit.sample.core.TransactionRecord
-import java.text.SimpleDateFormat
-import java.util.*
+import io.horizontalsystems.eoskit.models.Action
 
 class TransactionsFragment : Fragment() {
 
@@ -27,18 +26,12 @@ class TransactionsFragment : Fragment() {
         activity?.let {
             viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
 
-//            viewModel.transactions.observe(this, Observer { txs ->
-//                txs?.let { transactions ->
-//                    transactionsAdapter.items = transactions
-//                    transactionsAdapter.notifyDataSetChanged()
-//                }
-//            })
-//
-//            viewModel.lastBlockHeight.observe(this, Observer { height ->
-//                height?.let {
-//                    transactionsAdapter.lastBlockHeight = height
-//                }
-//            })
+            viewModel.transactions.observe(this, Observer { txs ->
+                txs?.let { transactions ->
+                    transactionsAdapter.items = transactions
+                    transactionsAdapter.notifyDataSetChanged()
+                }
+            })
         }
     }
 
@@ -67,17 +60,17 @@ class TransactionsFragment : Fragment() {
 }
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    var items = listOf<TransactionRecord>()
-    var lastBlockHeight: Long = 0
+    var items = listOf<Action>()
 
     override fun getItemCount() = items.size
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
-            ViewHolderTransaction(LayoutInflater.from(parent.context).inflate(R.layout.view_holder_transaction, parent, false))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return ViewHolderTransaction(LayoutInflater.from(parent.context).inflate(R.layout.view_holder_transaction, parent, false))
+    }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position, lastBlockHeight)
+            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position)
         }
     }
 }
@@ -85,28 +78,22 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(tx: TransactionRecord, index: Int, lastBlockHeight: Long) {
+    fun bind(tx: Action, index: Int) {
         containerView.setBackgroundColor(if (index % 2 == 0)
             Color.parseColor("#dddddd") else
             Color.TRANSPARENT
         )
 
-        val format = SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
-
-        var value = """
+        val value = """
             - #$index
-            - Tx Hash: ${tx.transactionHash}
-            - Block Number: ${tx.blockHeight ?: "N/A"}
-            - Tx Index: ${tx.transactionIndex}
-            - Inter Tx Index: ${tx.interTransactionIndex}
-            - Time: ${format.format(Date(tx.timestamp * 1000))}
-            - From: ${tx.from.address}
-            - To: ${tx.to.address}
-            - Amount: ${tx.amount.stripTrailingZeros()}
+            - ID: ${tx.transactionId}
+            - From: ${tx.from}
+            - To: ${tx.to}
+            - Amount: ${tx.amount} ${tx.symbol}
+            - Time: ${tx.blockTime}
+            - Block Number: ${tx.blockNumber}
+            - Action Sequence: ${tx.sequence}
         """
-
-        if (lastBlockHeight > 0)
-            value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it + 1 } ?: 0}"
 
         summary.text = value.trimIndent()
     }

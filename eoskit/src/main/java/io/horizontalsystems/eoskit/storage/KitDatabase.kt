@@ -3,17 +3,18 @@ package io.horizontalsystems.eoskit.storage
 import android.content.Context
 import androidx.room.*
 import io.horizontalsystems.eoskit.models.Balance
-import io.horizontalsystems.eoskit.models.Transaction
+import io.horizontalsystems.eoskit.models.Action
 import java.math.BigDecimal
 
 @Database(version = 1, exportSchema = false, entities = [
     Balance::class,
-    Transaction::class
+    Action::class
 ])
 
 @TypeConverters(Converters::class)
 abstract class KitDatabase : RoomDatabase() {
     abstract val balance: BalanceDao
+    abstract val actions: ActionDao
 
     companion object {
         fun create(context: Context, dbName: String): KitDatabase {

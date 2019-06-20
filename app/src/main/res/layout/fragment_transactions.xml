@@ -8,15 +8,19 @@
         android:id="@+id/actions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/transactions"
+        app:layout_constraintStart_toStartOf="@+id/transactions"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/ethFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clickable="true"
+            android:focusable="true"
             android:padding="15dp"
-            android:text="Ethereum"
+            android:text="EOS"
             android:textColor="@android:color/holo_blue_light" />
 
         <TextView
@@ -24,8 +28,9 @@
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:clickable="true"
+            android:focusable="true"
             android:padding="15dp"
-            android:text="ERC20 token"
+            android:text="JUNGLE"
             android:textColor="@android:color/holo_blue_light" />
 
     </LinearLayout>
@@ -34,9 +39,12 @@
         android:id="@+id/transactions"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:padding="15dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/actions" />
+        app:layout_constraintTop_toBottomOf="@+id/actions"
+        app:layout_constraintVertical_bias="0.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

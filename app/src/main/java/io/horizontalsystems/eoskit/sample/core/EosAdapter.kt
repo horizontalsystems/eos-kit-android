@@ -24,6 +24,9 @@ class EosAdapter(private val eosKit: EosKit) : IAdapter {
     override val balanceFlowable: Flowable<Unit>
         get() = eosKit.balanceFlowable.map { Unit }
 
+    override val transactionsFlowable: Flowable<Unit>
+        get() = eosKit.transactionsFlowable.map { Unit }
+
 }
 
 class TokenAdapter(private val eosKit: EosKit) : IAdapter {
@@ -45,6 +48,9 @@ class TokenAdapter(private val eosKit: EosKit) : IAdapter {
 
     override val balanceFlowable: Flowable<Unit>
         get() = eosKit.balanceFlowable.map { Unit }
+
+    override val transactionsFlowable: Flowable<Unit>
+        get() = eosKit.transactionsFlowable.map { Unit }
 
 }
 

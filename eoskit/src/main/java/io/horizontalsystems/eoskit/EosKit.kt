@@ -1,6 +1,9 @@
 package io.horizontalsystems.eoskit
 
 import android.content.Context
+import io.horizontalsystems.eoskit.managers.ActionManager
+import io.horizontalsystems.eoskit.managers.BalanceManager
+import io.horizontalsystems.eoskit.models.Action
 import io.horizontalsystems.eoskit.models.Balance
 import io.horizontalsystems.eoskit.storage.KitDatabase
 import io.horizontalsystems.eoskit.storage.Storage
@@ -9,17 +12,21 @@ import io.reactivex.Flowable
 import io.reactivex.subjects.PublishSubject
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 
-class EosKit(context: Context, host: String) : Blockchain.Listener {
+class EosKit(context: Context, host: String, account: String) : BalanceManager.Listener, ActionManager.Listener {
 
-    private val database = KitDatabase.create(context, "eos-kit-database")
+    private val rpcProvider = EosioJavaRpcProviderImpl(host)
+
+    private val database = KitDatabase.create(context, "eos-kit-database-$account")
     private val storage = Storage(database)
-    private val blockchain = Blockchain(storage, EosioJavaRpcProviderImpl(host))
+    private val balanceManager = BalanceManager(account, storage, rpcProvider)
+    private val actionManager = ActionManager(account, storage, rpcProvider)
 
     private val balanceSubject = PublishSubject.create<Unit>()
+    private val transactionsSubject = PublishSubject.create<Unit>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
 
     val syncState: SyncState
-        get() = blockchain.syncState
+        get() = SyncState.Synced
 
     val syncStateFlowable: Flowable<SyncState>
         get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
@@ -27,17 +34,23 @@ class EosKit(context: Context, host: String) : Blockchain.Listener {
     val balanceFlowable: Flowable<Unit>
         get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
+    val transactionsFlowable: Flowable<Unit>
+        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+
     fun start() {
-        blockchain.listener = this
-        blockchain.start()
+        balanceManager.sync("eosio.token")
+        balanceManager.listener = this
+        actionManager.sync()
+        actionManager.listener = this
     }
 
     fun stop() {
-        blockchain.stop()
     }
 
     fun refresh() {
-        blockchain.refresh()
+    }
+
+    fun send(address: String, amount: String, memo: String) {
     }
 
     fun clear() {
@@ -47,22 +60,32 @@ class EosKit(context: Context, host: String) : Blockchain.Listener {
         return storage.getBalance(symbol)
     }
 
-    // Blockchain Listener
-
-    override fun onUpdateBalance(balances: List<Balance>) {
-        storage.setBalances(balances)
-        balanceSubject.onNext(Unit)
+    fun transactions(token: String, fromSecuence: Int? = null, limit: Int? = null): List<Action> {
+        return storage.getActions(token, fromSecuence, limit)
     }
 
-    override fun onUpdateSyncState(syncState: SyncState) {
-        syncStateSubject.onNext(syncState)
+    // Balance Manager Listener
+
+    override fun onSyncBalance() {
+        balanceSubject.onNext(Unit)
+        syncStateSubject.onNext(SyncState.Synced)
+    }
+
+    override fun onSyncBalanceFail() {
+        syncStateSubject.onNext(SyncState.NotSynced)
+    }
+
+    // Action Manager Listener
+
+    override fun onSyncActions() {
+        transactionsSubject.onNext(Unit)
     }
 
     // SyncState
 
-    sealed class SyncState {
-        object Synced : SyncState()
-        object NotSynced : SyncState()
-        object Syncing : SyncState()
+    enum class SyncState {
+        Synced,
+        NotSynced,
+        Syncing
     }
 }

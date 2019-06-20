@@ -15,4 +15,5 @@ interface IAdapter {
 
     val syncStateFlowable: Flowable<Unit>
     val balanceFlowable: Flowable<Unit>
+    val transactionsFlowable: Flowable<Unit>
 }

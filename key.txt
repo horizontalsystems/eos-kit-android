@@ -1,7 +1,0 @@
-============ OWNER ============
-Public key: sEOS8jgLht4xSc9UHuJDw6Gxmjfie4XdRh9KB47jVq5Z8KyoMSysSp
-Private key: 5JpF1ggTYNmL8uk7YK8z6zbg7G4GmT8HxmSpPmMoXAVSmrUbxbE
-
-============ ACTIVE ============
-Public key: EOS76eza8bZTvjwaqksctfhutsJL8ZUNuYMoJZuBraCTLRSF1yZJn
-Private key: 5JL4ie4emqqY4Q7R1JQptQTWXNaEhBVChPjKd3UXirNykhyHaiH

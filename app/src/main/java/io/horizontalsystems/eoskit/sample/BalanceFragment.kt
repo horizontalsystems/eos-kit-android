@@ -36,9 +36,9 @@ class BalanceFragment : Fragment() {
 
             viewModel.syncState.observe(this, Observer { kitState ->
                 kitStateValue.text = when (kitState) {
-                    is SyncState.Synced -> "Synced"
-                    is SyncState.Syncing -> "Syncing"
-                    is SyncState.NotSynced -> "NotSynced"
+                    SyncState.Synced -> "Synced"
+                    SyncState.Syncing -> "Syncing"
+                    SyncState.NotSynced -> "NotSynced"
                     else -> "null"
                 }
             })
