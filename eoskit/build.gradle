@@ -1,4 +1,6 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 28
@@ -22,6 +24,30 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "androidx.appcompat:appcompat:1.0.2"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    // implementation "androidx.core:core-ktx:1.0.2"
+
+    // EOSIO
+    implementation 'one.block:eosiojava:0.1.0'
+    implementation 'one.block:eosiojavasoftkeysignatureprovider:0.1.1'
+    implementation 'one.block:eosiojavaandroidabieosserializationprovider:0.1.0'
+    implementation 'one.block:eosiojavarpcprovider:0.1.1'
+
+    // RxJava
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.2'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
+
+    // Retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.5.0'
+
+    // Room
+    implementation "androidx.room:room-runtime:2.1.0"
+    kapt "androidx.room:room-compiler:2.1.0"
 
     testImplementation 'junit:junit:4.12'
+}
+
+repositories {
+    mavenCentral()
 }

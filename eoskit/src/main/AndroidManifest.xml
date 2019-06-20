@@ -1,2 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.horizontalsystems.eoskit" />
+<manifest package="io.horizontalsystems.eoskit" />
