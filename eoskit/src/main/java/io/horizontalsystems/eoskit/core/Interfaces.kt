@@ -9,5 +9,5 @@ interface IStorage {
 
     val lastAction: Action?
     fun setActions(actions: List<Action>)
-    fun getActions(token: String, fromSequence: Int?, limit: Int?): List<Action>
+    fun getActions(token: String, symbol: String, account: String, fromSequence: Int?, limit: Int?): List<Action>
 }

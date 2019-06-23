@@ -8,10 +8,11 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 
-class SendReceiveFragment : Fragment() {
+class SendTransactionFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
 
@@ -20,11 +21,16 @@ class SendReceiveFragment : Fragment() {
     private lateinit var sendMemo: EditText
     private lateinit var sendAddress: EditText
 
+    private var adapter: EosAdapter? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         activity?.let {
             viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
+            viewModel.adapters.find { it.coin == "EOS" }?.let { adr ->
+                adapter = adr
+            }
         }
     }
 
@@ -43,23 +49,42 @@ class SendReceiveFragment : Fragment() {
             when {
                 sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
                 sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
-                else -> viewModel.send(
-                        sendAddress.text.toString(),
-                        sendAmount.text.toString(),
-                        sendMemo.text.toString()
-                )
+                else -> send()
             }
         }
+    }
 
-        viewModel.sendStatus.observe(this, Observer { sendError ->
-            val msg = if (sendError != null) {
-                sendError.localizedMessage
-            } else {
-                " Successfully sent!"
-            }
+    private fun send() {
+        adapter?.let { adapter ->
+            adapter.send(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal(), sendMemo.text.toString())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError { e -> e.printStackTrace() }
+                    .subscribe({
+                        messageSent(null)
+                    }, {
+                        messageSent(it)
+                    })
 
-            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-        })
+            sendAddress.text = null
+            sendAmount.text = null
+            sendMemo.text = null
+        }
+    }
+
+    private fun messageSent(sendError: Throwable?) {
+        val message = if (sendError != null) {
+            sendError.localizedMessage
+        } else {
+            " Successfully sent!"
+        }
+
+        try {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println(e.message)
+        }
     }
 
 }

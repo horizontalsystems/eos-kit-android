@@ -15,13 +15,17 @@ import java.math.BigDecimal
 class BalanceManager(private val account: String, private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
 
     interface Listener {
-        fun onSyncBalance()
-        fun onSyncBalanceFail()
+        fun onSyncBalance(balance: Balance)
+        fun onSyncBalanceFail(token: String)
     }
 
     var listener: Listener? = null
 
     private val disposables = CompositeDisposable()
+
+    fun getBalance(symbol: String): Balance? {
+        return storage.getBalance(symbol)
+    }
 
     fun sync(token: String) {
         Single.fromCallable { getBalances(token) }
@@ -29,7 +33,7 @@ class BalanceManager(private val account: String, private val storage: IStorage,
                 .doOnError { }
                 .subscribe({ }, {
                     it?.printStackTrace()
-                    listener?.onSyncBalanceFail()
+                    listener?.onSyncBalanceFail(token)
                 })
                 .let { disposables.add(it) }
     }
@@ -48,11 +52,11 @@ class BalanceManager(private val account: String, private val storage: IStorage,
 
         for (i in 0 until jsonArray.length()) {
             val element = jsonArray.getString(i).split(" ")
-            balances.add(Balance(element[1], BigDecimal(element[0])))
+            balances.add(Balance(element[1], BigDecimal(element[0]), token))
         }
 
         storage.setBalances(balances)
-        listener?.onSyncBalance()
+        balances.forEach { listener?.onSyncBalance(it) }
 
         return balances
     }

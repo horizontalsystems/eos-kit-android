@@ -10,7 +10,7 @@ interface ActionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(transactions: List<Action>)
 
-    @Query("SELECT * FROM actions WHERE token = 'transfer' ORDER BY sequence DESC")
+    @Query("SELECT * FROM actions WHERE account = 'transfer' ORDER BY sequence DESC")
     fun getAll(): List<Action>
 
     @RawQuery

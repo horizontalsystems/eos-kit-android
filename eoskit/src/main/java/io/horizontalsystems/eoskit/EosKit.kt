@@ -1,84 +1,87 @@
 package io.horizontalsystems.eoskit
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import io.horizontalsystems.eoskit.core.Token
 import io.horizontalsystems.eoskit.managers.ActionManager
 import io.horizontalsystems.eoskit.managers.BalanceManager
+import io.horizontalsystems.eoskit.managers.TransactionManager
 import io.horizontalsystems.eoskit.models.Action
 import io.horizontalsystems.eoskit.models.Balance
+import io.horizontalsystems.eoskit.models.Transaction
 import io.horizontalsystems.eoskit.storage.KitDatabase
 import io.horizontalsystems.eoskit.storage.Storage
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
-import io.reactivex.subjects.PublishSubject
+import io.reactivex.Single
+import one.block.eosiojava.implementations.ABIProviderImpl
+import one.block.eosiojavaabieosserializationprovider.AbiEosSerializationProviderImpl
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
+import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
+import java.math.BigDecimal
 
-class EosKit(context: Context, host: String, account: String) : BalanceManager.Listener, ActionManager.Listener {
+class EosKit(private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager) : BalanceManager.Listener, ActionManager.Listener {
 
-    private val rpcProvider = EosioJavaRpcProviderImpl(host)
+    private val tokens = mutableListOf<Token>()
 
-    private val database = KitDatabase.create(context, "eos-kit-database-$account")
-    private val storage = Storage(database)
-    private val balanceManager = BalanceManager(account, storage, rpcProvider)
-    private val actionManager = ActionManager(account, storage, rpcProvider)
+    fun register(token: String, symbol: String): Token {
+        val newBalance = balanceManager.getBalance(symbol)
+        val newToken = Token(token, symbol).apply {
+            syncState = SyncState.NotSynced
+            balance = newBalance?.value ?: BigDecimal(0)
+        }
 
-    private val balanceSubject = PublishSubject.create<Unit>()
-    private val transactionsSubject = PublishSubject.create<Unit>()
-    private val syncStateSubject = PublishSubject.create<SyncState>()
-
-    val syncState: SyncState
-        get() = SyncState.Synced
-
-    val syncStateFlowable: Flowable<SyncState>
-        get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
-
-    val balanceFlowable: Flowable<Unit>
-        get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
-
-    val transactionsFlowable: Flowable<Unit>
-        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
-
-    fun start() {
-        balanceManager.sync("eosio.token")
-        balanceManager.listener = this
-        actionManager.sync()
-        actionManager.listener = this
+        tokens.add(newToken)
+        return newToken
     }
 
-    fun stop() {
+    fun unregister(token: Token) {
+        tokens.removeAll { it == token }
     }
 
     fun refresh() {
+        tokens.forEach { token ->
+            token.syncState = SyncState.NotSynced
+            balanceManager.sync(token.token)
+        }
+
+        actionManager.sync()
     }
 
-    fun send(address: String, amount: String, memo: String) {
+    fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
+        return transactionManager
+                .send(token.token, to, "$amount ${token.symbol}", memo)
+                .doOnSuccess { refresh() }
     }
 
-    fun clear() {
+    fun transactions(token: Token, fromSequence: Int? = null, limit: Int? = null): List<Transaction> {
+        return actionManager.getActions(token, fromSequence, limit).map { Transaction(it) }
     }
 
-    fun getBalance(symbol: String): Balance? {
-        return storage.getBalance(symbol)
+    // BalanceManager Listener
+
+    override fun onSyncBalance(balance: Balance) {
+        tokenBy(balance.token, balance.symbol)?.let { token ->
+            token.balance = balance.value
+            token.syncState = SyncState.Synced
+        }
     }
 
-    fun transactions(token: String, fromSecuence: Int? = null, limit: Int? = null): List<Action> {
-        return storage.getActions(token, fromSecuence, limit)
+    override fun onSyncBalanceFail(token: String) {
+        tokens.find { it.token == token }?.syncState = SyncState.NotSynced
     }
 
-    // Balance Manager Listener
+    // ActionManager Listener
 
-    override fun onSyncBalance() {
-        balanceSubject.onNext(Unit)
-        syncStateSubject.onNext(SyncState.Synced)
+    override fun onSyncActions(actions: List<Action>) {
+        actions.groupBy { it.account }.forEach { (token, acts) ->
+            acts.groupBy { it.symbol }.forEach { (symbol, _) ->
+                tokenBy(token, symbol)?.transactionsSubject?.onNext(Unit)
+            }
+        }
+
     }
 
-    override fun onSyncBalanceFail() {
-        syncStateSubject.onNext(SyncState.NotSynced)
-    }
-
-    // Action Manager Listener
-
-    override fun onSyncActions() {
-        transactionsSubject.onNext(Unit)
+    private fun tokenBy(name: String, symbol: String?): Token? {
+        return tokens.find { it.token == name && it.symbol == symbol }
     }
 
     // SyncState
@@ -87,5 +90,46 @@ class EosKit(context: Context, host: String, account: String) : BalanceManager.L
         Synced,
         NotSynced,
         Syncing
+    }
+
+    enum class NetworkType(chainId: String) {
+        MainNet("aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906"), // EOS
+        TestNet("e70aaab8997e1dfce58fbfac80cbbb8fecec7b99cf982a9444273cbc64c41473")  // JUNGLE
+    }
+
+    companion object {
+        fun create(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
+            val host = when (networkType) {
+                NetworkType.MainNet -> "https://eos.greymass.com"
+                NetworkType.TestNet -> "https://peer1-jungle.eosphere.io"
+            }
+
+            val database = KitDatabase.create(context, getDatabaseName(networkType, walletId))
+            val storage = Storage(database)
+
+            val rpcProvider = EosioJavaRpcProviderImpl(host)
+            val serializationProvider = AbiEosSerializationProviderImpl()
+            val abiProvider = ABIProviderImpl(rpcProvider, serializationProvider)
+            val signatureProvider = SoftKeySignatureProviderImpl().apply {
+                importKey(privateKey)
+            }
+
+            val balanceManager = BalanceManager(account, storage, rpcProvider)
+            val actionManager = ActionManager(account, storage, rpcProvider)
+            val transactionManager = TransactionManager(account, rpcProvider, signatureProvider, serializationProvider, abiProvider)
+
+            val eosKit = EosKit(balanceManager, actionManager, transactionManager)
+
+            balanceManager.listener = eosKit
+            actionManager.listener = eosKit
+
+            return eosKit
+        }
+
+        fun clear(context: Context, networkType: NetworkType, walletId: String) {
+            SQLiteDatabase.deleteDatabase(context.getDatabasePath(getDatabaseName(networkType, walletId)))
+        }
+
+        private fun getDatabaseName(networkType: NetworkType, walletId: String): String = "Eos-$networkType-$walletId"
     }
 }

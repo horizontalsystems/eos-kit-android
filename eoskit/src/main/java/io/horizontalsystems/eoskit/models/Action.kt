@@ -7,12 +7,13 @@ import androidx.room.PrimaryKey
 class Action(
         @PrimaryKey
         val sequence: Int,
-        val type: String,
+        val name: String,
+        val account: String,
         val transactionId: String,
         val blockNumber: Int,
         val blockTime: String,
-        val token: String,
 
+        val receiver: String,
         val from: String?,
         val to: String?,
         val amount: String?,

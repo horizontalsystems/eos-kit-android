@@ -10,7 +10,7 @@
         android:title="Transactions" />
 
     <item
-        android:id="@+id/navigation_send_receive"
+        android:id="@+id/navigation_send_transact"
         android:title="Send/Receive" />
 
 </menu>

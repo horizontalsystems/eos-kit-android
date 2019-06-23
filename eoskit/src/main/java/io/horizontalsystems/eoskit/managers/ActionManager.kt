@@ -1,6 +1,7 @@
 package io.horizontalsystems.eoskit.managers
 
 import io.horizontalsystems.eoskit.core.IStorage
+import io.horizontalsystems.eoskit.core.Token
 import io.horizontalsystems.eoskit.models.Action
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -14,7 +15,7 @@ import org.json.JSONObject
 class ActionManager(private val account: String, private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
 
     interface Listener {
-        fun onSyncActions()
+        fun onSyncActions(actions: List<Action>)
     }
 
     var listener: Listener? = null
@@ -29,6 +30,10 @@ class ActionManager(private val account: String, private val storage: IStorage, 
                 .let { disposables.add(it) }
     }
 
+    fun getActions(token: Token, fromSequence: Int? = null, limit: Int? = null): List<Action> {
+        return storage.getActions(token.token, token.symbol, account, fromSequence, limit)
+    }
+
     private fun getActions(position: Int) {
         val reqJson = JSONObject().apply {
             put("pos", position + 1)
@@ -38,17 +43,16 @@ class ActionManager(private val account: String, private val storage: IStorage, 
 
         val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), reqJson.toString())
         val resJson = rpcProvider.getActions(reqBody)
-        val actions = JSONObject(resJson).getJSONArray("actions")
+        val actJson = JSONObject(resJson).getJSONArray("actions")
+        val actions = parse(actJson)
 
-        val list = parse(actions)
-        storage.setActions(list)
+        storage.setActions(actions)
 
-        if (actions.length() > 0) {
-            getActions(list[list.size - 1].sequence)
-            return
+        if (actJson.length() > 0) {
+            getActions(actions[actions.size - 1].sequence)
         }
 
-        listener?.onSyncActions()
+        listener?.onSyncActions(actions)
     }
 
     private fun parse(actions: JSONArray): List<Action> {
@@ -57,16 +61,20 @@ class ActionManager(private val account: String, private val storage: IStorage, 
         for (i in 0 until actions.length()) {
             try {
                 val action = actions.getJSONObject(i)
-                val trace = action.getJSONObject("action_trace")
                 val actionSequence = action.getInt("account_action_seq")
-                val trxId = trace.getString("trx_id")
+                val trace = action.getJSONObject("action_trace")
+
+                val receipt = trace.getJSONObject("receipt")
+                val receiver = receipt.getString("receiver")
+
+                val transactionId = trace.getString("trx_id")
                 val blockNumber = trace.getInt("block_num")
                 val blockTime = trace.getString("block_time")
 
                 val act = trace.getJSONObject("act")
                 val type = act.optString("name")
                 val token = act.optString("account")
-                val data = act.getJSONObject("data") ?: continue
+                val data = act.getJSONObject("data")
                 val from = data.optString("from")
                 val to = data.optString("to")
                 val memo = data.optString("memo")
@@ -81,12 +89,13 @@ class ActionManager(private val account: String, private val storage: IStorage, 
 
                 transactions.add(Action(
                         sequence = actionSequence,
-                        type = type,
-                        transactionId = trxId,
+                        name = type,
+                        transactionId = transactionId,
                         blockNumber = blockNumber,
                         blockTime = blockTime,
-                        token = token,
+                        account = token,
 
+                        receiver = receiver,
                         from = from,
                         to = to,
                         amount = amount,
@@ -95,6 +104,7 @@ class ActionManager(private val account: String, private val storage: IStorage, 
                 ))
             } catch (e: Exception) {
                 e.printStackTrace()
+                println(e.message)
             }
         }
 

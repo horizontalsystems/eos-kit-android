@@ -26,8 +26,8 @@ class Storage(private val database: KitDatabase) : IStorage {
         database.actions.insertAll(actions)
     }
 
-    override fun getActions(token: String, fromSequence: Int?, limit: Int?): List<Action> {
-        var query = "SELECT * FROM actions WHERE type = 'transfer'"
+    override fun getActions(token: String, symbol: String, account: String, fromSequence: Int?, limit: Int?): List<Action> {
+        var query = "SELECT * FROM actions WHERE account = '$token' AND name = 'transfer' AND receiver = '$account' AND symbol = '$symbol'"
 
         if (fromSequence != null) {
             query += " WHERE sequence < $fromSequence"
@@ -38,8 +38,6 @@ class Storage(private val database: KitDatabase) : IStorage {
         if (limit != null) {
             query += " LIMIT $limit"
         }
-
-        println(query)
 
         return database.actions.getSql(SimpleSQLiteQuery(query))
     }

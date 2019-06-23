@@ -11,7 +11,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.horizontalsystems.eoskit.models.Action
+import io.horizontalsystems.eoskit.models.Transaction
 
 class TransactionsFragment : Fragment() {
 
@@ -46,7 +46,7 @@ class TransactionsFragment : Fragment() {
         transactionsRecyclerView.adapter = transactionsAdapter
         transactionsRecyclerView.layoutManager = LinearLayoutManager(context)
 
-        val ethFilter = view.findViewById<TextView>(R.id.ethFilter)
+        val ethFilter = view.findViewById<TextView>(R.id.eosFilter)
         val tokenFilter = view.findViewById<TextView>(R.id.tokenFilter)
 
         ethFilter.setOnClickListener {
@@ -60,7 +60,7 @@ class TransactionsFragment : Fragment() {
 }
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    var items = listOf<Action>()
+    var items = listOf<Transaction>()
 
     override fun getItemCount() = items.size
 
@@ -78,7 +78,7 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(tx: Action, index: Int) {
+    fun bind(tx: Transaction, index: Int) {
         containerView.setBackgroundColor(if (index % 2 == 0)
             Color.parseColor("#dddddd") else
             Color.TRANSPARENT
@@ -86,13 +86,13 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
 
         val value = """
             - #$index
-            - ID: ${tx.transactionId}
+            - ID: ${tx.id}
             - From: ${tx.from}
             - To: ${tx.to}
             - Amount: ${tx.amount} ${tx.symbol}
-            - Time: ${tx.blockTime}
-            - Block Number: ${tx.blockNumber}
-            - Action Sequence: ${tx.sequence}
+            - Time: ${tx.date}
+            s- Memo: ${tx.memo}
+            - Action Sequence: ${tx.actionSequence}
         """
 
         summary.text = value.trimIndent()

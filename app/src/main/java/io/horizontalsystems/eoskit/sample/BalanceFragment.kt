@@ -30,10 +30,6 @@ class BalanceFragment : Fragment() {
                 balanceValue.text = (balance ?: 0).toString()
             })
 
-            viewModel.balanceToken.observe(this, Observer { balance ->
-                balanceValueToken.text = (balance ?: 0).toString()
-            })
-
             viewModel.syncState.observe(this, Observer { kitState ->
                 kitStateValue.text = when (kitState) {
                     SyncState.Synced -> "Synced"

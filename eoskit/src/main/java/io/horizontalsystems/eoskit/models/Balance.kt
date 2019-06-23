@@ -5,4 +5,4 @@ import androidx.room.PrimaryKey
 import java.math.BigDecimal
 
 @Entity
-class Balance(@PrimaryKey val symbol: String, val value: BigDecimal)
+class Balance(@PrimaryKey val symbol: String, val value: BigDecimal, val token: String)
