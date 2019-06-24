@@ -35,7 +35,7 @@ class EosAdapter(private val eosKit: EosKit, tokenName: String, tokenSymbol: Str
         return eosKit.send(token, to, amount, memo)
     }
 
-    fun transactions(fromActionSequence: Int? = null, limit: Int? = null): List<Transaction> {
+    fun transactions(fromActionSequence: Int? = null, limit: Int? = null): Single<List<Transaction>> {
         return eosKit.transactions(token, fromActionSequence, limit)
     }
 }

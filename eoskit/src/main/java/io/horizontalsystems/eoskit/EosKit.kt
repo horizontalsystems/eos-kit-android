@@ -11,12 +11,14 @@ import io.horizontalsystems.eoskit.models.Balance
 import io.horizontalsystems.eoskit.models.Transaction
 import io.horizontalsystems.eoskit.storage.KitDatabase
 import io.horizontalsystems.eoskit.storage.Storage
+import io.reactivex.Observable
 import io.reactivex.Single
 import one.block.eosiojava.implementations.ABIProviderImpl
 import one.block.eosiojavaabieosserializationprovider.AbiEosSerializationProviderImpl
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
 import java.math.BigDecimal
+import java.util.concurrent.TimeUnit
 
 class EosKit(private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager) : BalanceManager.Listener, ActionManager.Listener {
 
@@ -49,11 +51,17 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
                 .send(token.token, to, "$amount ${token.symbol}", memo)
-                .doOnSuccess { refresh() }
+                .doOnSuccess {
+                    Observable.timer(2, TimeUnit.SECONDS).subscribe {
+                        refresh()
+                    }
+                }
     }
 
-    fun transactions(token: Token, fromSequence: Int? = null, limit: Int? = null): List<Transaction> {
-        return actionManager.getActions(token, fromSequence, limit).map { Transaction(it) }
+    fun transactions(token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Transaction>> {
+        return actionManager
+                .getActions(token, fromSequence, limit)
+                .map { list -> list.map { Transaction(it) } }
     }
 
     // BalanceManager Listener

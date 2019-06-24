@@ -91,7 +91,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             - To: ${tx.to}
             - Amount: ${tx.amount} ${tx.symbol}
             - Time: ${tx.date}
-            s- Memo: ${tx.memo}
+            - Memo: ${tx.memo}
             - Action Sequence: ${tx.actionSequence}
         """
 

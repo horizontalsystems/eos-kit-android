@@ -30,8 +30,8 @@ class ActionManager(private val account: String, private val storage: IStorage, 
                 .let { disposables.add(it) }
     }
 
-    fun getActions(token: Token, fromSequence: Int? = null, limit: Int? = null): List<Action> {
-        return storage.getActions(token.token, token.symbol, account, fromSequence, limit)
+    fun getActions(token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Action>> {
+        return Single.create { it.onSuccess(storage.getActions(token.token, token.symbol, account, fromSequence, limit)) }
     }
 
     private fun getActions(position: Int) {
@@ -104,7 +104,6 @@ class ActionManager(private val account: String, private val storage: IStorage, 
                 ))
             } catch (e: Exception) {
                 e.printStackTrace()
-                println(e.message)
             }
         }
 

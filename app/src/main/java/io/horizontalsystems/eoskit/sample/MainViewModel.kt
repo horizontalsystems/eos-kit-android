@@ -4,6 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import io.horizontalsystems.eoskit.EosKit
 import io.horizontalsystems.eoskit.models.Transaction
+import io.reactivex.disposables.CompositeDisposable
 
 class MainViewModel : ViewModel() {
 
@@ -12,6 +13,8 @@ class MainViewModel : ViewModel() {
     val syncState = MutableLiveData<EosKit.SyncState>()
     val balance = MutableLiveData<String>()
     val transactions = MutableLiveData<List<Transaction>>()
+
+    private val disposables = CompositeDisposable()
 
     private lateinit var eosKit: EosKit
 
@@ -47,7 +50,7 @@ class MainViewModel : ViewModel() {
             }
 
             adapter.transactionsFlowable.subscribe {
-                transactions.postValue(adapter.transactions())
+                updateActions(adapter)
             }
         }
 
@@ -59,6 +62,8 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateActions(adapter: EosAdapter) {
-        transactions.postValue(adapter.transactions())
+        adapter.transactions()
+                .subscribe { list -> transactions.postValue(list) }
+                .let { disposables.add(it) }
     }
 }
