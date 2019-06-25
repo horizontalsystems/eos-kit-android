@@ -30,6 +30,10 @@ class ActionManager(private val account: String, private val storage: IStorage, 
                 .let { disposables.add(it) }
     }
 
+    fun stop() {
+        disposables.dispose()
+    }
+
     fun getActions(token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Action>> {
         return Single.create { it.onSuccess(storage.getActions(token.token, token.symbol, account, fromSequence, limit)) }
     }

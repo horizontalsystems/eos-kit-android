@@ -18,6 +18,7 @@ import one.block.eosiojavaabieosserializationprovider.AbiEosSerializationProvide
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.concurrent.TimeUnit
 
 class EosKit(private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager) : BalanceManager.Listener, ActionManager.Listener {
@@ -32,6 +33,8 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
         }
 
         tokens.add(newToken)
+        balanceManager.sync(newToken.token)
+
         return newToken
     }
 
@@ -41,19 +44,27 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
 
     fun refresh() {
         tokens.forEach { token ->
-            token.syncState = SyncState.NotSynced
+            if (token.syncState != SyncState.Synced) {
+                token.syncState = SyncState.NotSynced
+            }
+
             balanceManager.sync(token.token)
         }
 
         actionManager.sync()
     }
 
+    fun stop() {
+        balanceManager.stop()
+        actionManager.stop()
+    }
+
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
-                .send(token.token, to, "$amount ${token.symbol}", memo)
+                .send(token.token, to, "${amount.setScale(4, RoundingMode.HALF_DOWN)} ${token.symbol}", memo)
                 .doOnSuccess {
                     Observable.timer(2, TimeUnit.SECONDS).subscribe {
-                        refresh()
+                        balanceManager.sync(token.token)
                     }
                 }
     }

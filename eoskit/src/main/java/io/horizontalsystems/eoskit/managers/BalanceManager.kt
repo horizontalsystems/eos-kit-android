@@ -38,6 +38,10 @@ class BalanceManager(private val account: String, private val storage: IStorage,
                 .let { disposables.add(it) }
     }
 
+    fun stop() {
+        disposables.dispose()
+    }
+
     private fun getBalances(token: String): List<Balance> {
         val reqJson = JSONObject().apply {
             put("code", token)
