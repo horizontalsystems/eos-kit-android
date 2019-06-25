@@ -30,7 +30,7 @@ class Storage(private val database: KitDatabase) : IStorage {
         var query = "SELECT * FROM actions WHERE account = '$token' AND name = 'transfer' AND receiver = '$account' AND symbol = '$symbol'"
 
         if (fromSequence != null) {
-            query += " WHERE sequence < $fromSequence"
+            query += " AND sequence < $fromSequence"
         }
 
         query += " ORDER BY sequence DESC"

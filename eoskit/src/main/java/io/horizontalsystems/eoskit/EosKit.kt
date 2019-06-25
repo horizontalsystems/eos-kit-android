@@ -81,9 +81,11 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
 
     override fun onSyncActions(actions: List<Action>) {
         actions.groupBy { it.account }.forEach { (token, acts) ->
-            acts.groupBy { it.symbol }.forEach { (symbol, _) ->
-                tokenBy(token, symbol)?.transactionsSubject?.onNext(Unit)
-            }
+            acts.map { Transaction(it) }
+                    .groupBy { it.symbol }
+                    .forEach { (symbol, transactions) ->
+                        tokenBy(token, symbol)?.transactionsSubject?.onNext(transactions)
+                    }
         }
 
     }

@@ -1,6 +1,7 @@
 package io.horizontalsystems.eoskit.core
 
 import io.horizontalsystems.eoskit.EosKit.SyncState
+import io.horizontalsystems.eoskit.models.Transaction
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.subjects.PublishSubject
@@ -14,7 +15,7 @@ class Token(val token: String, val symbol: String) {
     val balanceFlowable: Flowable<BigDecimal>
         get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val transactionsFlowable: Flowable<Unit>
+    val transactionsFlowable: Flowable<List<Transaction>>
         get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     var syncState: SyncState = SyncState.NotSynced
@@ -31,8 +32,7 @@ class Token(val token: String, val symbol: String) {
             balanceSubject.onNext(balance)
         }
 
-    val transactionsSubject = PublishSubject.create<Unit>()
-
+    val transactionsSubject = PublishSubject.create<List<Transaction>>()
     private val balanceSubject = PublishSubject.create<BigDecimal>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
 }
