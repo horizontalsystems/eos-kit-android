@@ -31,6 +31,9 @@ class EosAdapter(private val eosKit: EosKit, tokenName: String, tokenSymbol: Str
     val transactionsFlowable: Flowable<Unit>
         get() = token.transactionsFlowable.map { Unit }
 
+    val irreversibleBlockFlowable: Flowable<Unit>
+        get() = eosKit.irreversibleBlockFlowable.map { Unit }
+
     fun send(to: String, amount: BigDecimal, memo: String): Single<String> {
         return eosKit.send(token, to, amount, memo)
     }

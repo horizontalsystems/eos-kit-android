@@ -4,6 +4,7 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import io.horizontalsystems.eoskit.core.IStorage
 import io.horizontalsystems.eoskit.models.Action
 import io.horizontalsystems.eoskit.models.Balance
+import io.horizontalsystems.eoskit.models.IrreversibleBlock
 
 class Storage(private val database: KitDatabase) : IStorage {
 
@@ -40,5 +41,14 @@ class Storage(private val database: KitDatabase) : IStorage {
         }
 
         return database.actions.getSql(SimpleSQLiteQuery(query))
+    }
+
+    // IrreversibleBlock
+
+    override val lastIrreversibleBlock: IrreversibleBlock?
+        get() = database.irreversibleBlock.getLast()
+
+    override fun setIrreversibleBlock(height: Int) {
+        database.irreversibleBlock.insert(IrreversibleBlock(height))
     }
 }

@@ -32,6 +32,11 @@ class TransactionsFragment : Fragment() {
                     transactionsAdapter.notifyDataSetChanged()
                 }
             })
+
+            viewModel.lastIrreversibleBlock.observe(this, Observer { lib ->
+                lib?.let { transactionsAdapter.lib = lib }
+            })
+
         }
     }
 
@@ -61,6 +66,7 @@ class TransactionsFragment : Fragment() {
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     var items = listOf<Transaction>()
+    var lib: Int = 0
 
     override fun getItemCount() = items.size
 
@@ -70,7 +76,7 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position)
+            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position, lib)
         }
     }
 }
@@ -78,15 +84,22 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(tx: Transaction, index: Int) {
+    fun bind(tx: Transaction, index: Int, lib: Int) {
         containerView.setBackgroundColor(if (index % 2 == 0)
             Color.parseColor("#dddddd") else
             Color.TRANSPARENT
         )
 
+        val status = if (tx.blockNumber < lib) {
+            "Confirmed"
+        } else {
+            "${tx.blockNumber - lib} blocks to be confirmed"
+        }
+
         val value = """
             - #$index
             - ID: ${tx.id}
+            - Status: $status
             - From: ${tx.from}
             - To: ${tx.to}
             - Amount: ${tx.amount} ${tx.symbol}

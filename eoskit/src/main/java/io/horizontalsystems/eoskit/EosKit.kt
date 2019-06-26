@@ -11,8 +11,11 @@ import io.horizontalsystems.eoskit.models.Balance
 import io.horizontalsystems.eoskit.models.Transaction
 import io.horizontalsystems.eoskit.storage.KitDatabase
 import io.horizontalsystems.eoskit.storage.Storage
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.subjects.PublishSubject
 import one.block.eosiojava.implementations.ABIProviderImpl
 import one.block.eosiojavaabieosserializationprovider.AbiEosSerializationProviderImpl
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
@@ -23,7 +26,12 @@ import java.util.concurrent.TimeUnit
 
 class EosKit(private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager) : BalanceManager.Listener, ActionManager.Listener {
 
+    var irreversibleBlockHeight: Int? = actionManager.irreversibleBlockHeight
+    val irreversibleBlockFlowable: Flowable<Int>
+        get() = irreversibleBlockSubject.toFlowable(BackpressureStrategy.BUFFER)
+
     private val tokens = mutableListOf<Token>()
+    private val irreversibleBlockSubject = PublishSubject.create<Int>()
 
     fun register(token: String, symbol: String): Token {
         val newBalance = balanceManager.getBalance(symbol)
@@ -98,7 +106,11 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
                         tokenBy(token, symbol)?.transactionsSubject?.onNext(transactions)
                     }
         }
+    }
 
+    override fun onChangeLastIrreversibleBlock(height: Int) {
+        irreversibleBlockHeight = height
+        irreversibleBlockSubject.onNext(height)
     }
 
     private fun tokenBy(name: String, symbol: String?): Token? {

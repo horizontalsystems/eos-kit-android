@@ -13,6 +13,7 @@ class MainViewModel : ViewModel() {
     val syncState = MutableLiveData<EosKit.SyncState>()
     val balance = MutableLiveData<String>()
     val transactions = MutableLiveData<List<Transaction>>()
+    val lastIrreversibleBlock = MutableLiveData<Int>()
 
     private val disposables = CompositeDisposable()
 
@@ -51,6 +52,10 @@ class MainViewModel : ViewModel() {
 
             adapter.transactionsFlowable.subscribe {
                 updateActions(adapter)
+            }
+
+            adapter.irreversibleBlockFlowable.subscribe {
+                lastIrreversibleBlock.postValue(eosKit.irreversibleBlockHeight)
             }
         }
 

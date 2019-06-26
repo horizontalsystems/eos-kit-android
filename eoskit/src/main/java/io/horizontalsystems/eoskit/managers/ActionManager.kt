@@ -16,9 +16,12 @@ class ActionManager(private val account: String, private val storage: IStorage, 
 
     interface Listener {
         fun onSyncActions(actions: List<Action>)
+        fun onChangeLastIrreversibleBlock(height: Int)
     }
 
     var listener: Listener? = null
+    val irreversibleBlockHeight: Int?
+        get() = storage.lastIrreversibleBlock?.height
 
     private val disposables = CompositeDisposable()
 
@@ -47,10 +50,13 @@ class ActionManager(private val account: String, private val storage: IStorage, 
 
         val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), reqJson.toString())
         val resJson = rpcProvider.getActions(reqBody)
-        val actJson = JSONObject(resJson).getJSONArray("actions")
+        val results = JSONObject(resJson)
+
+        val actJson = results.getJSONArray("actions")
         val actions = parse(actJson)
 
         storage.setActions(actions)
+        updateLastIrreversibleBlock(results.getInt("last_irreversible_block"))
 
         if (actJson.length() > 0) {
             getActions(actions[actions.size - 1].sequence)
@@ -112,5 +118,10 @@ class ActionManager(private val account: String, private val storage: IStorage, 
         }
 
         return transactions
+    }
+
+    private fun updateLastIrreversibleBlock(height: Int) {
+        storage.setIrreversibleBlock(height)
+        listener?.onChangeLastIrreversibleBlock(height)
     }
 }

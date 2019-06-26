@@ -2,6 +2,7 @@ package io.horizontalsystems.eoskit.models
 
 class Transaction(action: Action) {
     val id: String = action.transactionId
+    val blockNumber: Int = action.blockNumber
     val actionSequence: Int = action.sequence
     val date: String = action.blockTime
 
