@@ -5,35 +5,14 @@
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:id="@+id/actions"
+        android:id="@+id/transactionHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:padding="15dp"
         app:layout_constraintBottom_toTopOf="@+id/transactions"
         app:layout_constraintStart_toStartOf="@+id/transactions"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TextView
-            android:id="@+id/eosFilter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="15dp"
-            android:text="EOS"
-            android:textColor="@android:color/holo_blue_light" />
-
-        <TextView
-            android:id="@+id/tokenFilter"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="15dp"
-            android:text="JUNGLE"
-            android:textColor="@android:color/holo_blue_light" />
-
-    </LinearLayout>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/transactions"
@@ -44,7 +23,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/actions"
+        app:layout_constraintTop_toBottomOf="@+id/transactionHeader"
         app:layout_constraintVertical_bias="0.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

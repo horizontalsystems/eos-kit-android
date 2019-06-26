@@ -14,7 +14,7 @@ class EosAdapter(private val eosKit: EosKit, tokenName: String, tokenSymbol: Str
         get() = token.symbol
 
     val coin: String
-        get() = token.symbol
+        get() = token.token
 
     val syncState: EosKit.SyncState
         get() = token.syncState

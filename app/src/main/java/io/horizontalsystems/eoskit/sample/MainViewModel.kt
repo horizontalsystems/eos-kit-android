@@ -12,7 +12,7 @@ class MainViewModel : ViewModel() {
 
     val syncState = MutableLiveData<EosKit.SyncState>()
     val balance = MutableLiveData<String>()
-    val transactions = MutableLiveData<List<Transaction>>()
+    val transactions = MutableLiveData<Map<String, List<Transaction>>>()
     val lastIrreversibleBlock = MutableLiveData<Int>()
 
     private val disposables = CompositeDisposable()
@@ -31,11 +31,18 @@ class MainViewModel : ViewModel() {
         init()
     }
 
+    fun updateActions(adapter: EosAdapter) {
+        adapter.transactions()
+                .subscribe { list -> transactions.postValue(mapOf(adapter.name to list)) }
+                .let { disposables.add(it) }
+    }
+
     // Private
 
     private fun init() {
         eosKit = EosKit.create(App.instance, "talgattest11", "5JW3RbdpXrVTHwJzNMCpRsaKk5YEqCKykmZPxqT7MrXXsDhp2PY", EosKit.NetworkType.TestNet)
         adapters.add(EosAdapter(eosKit, "eosio.token", "EOS"))
+        adapters.add(EosAdapter(eosKit, "eosio.token", "JUNGLE"))
 
         adapters.forEach { adapter ->
 
@@ -64,11 +71,5 @@ class MainViewModel : ViewModel() {
 
     private fun updateBalance(adapter: EosAdapter) {
         balance.postValue("${adapter.balance} ${adapter.name}")
-    }
-
-    private fun updateActions(adapter: EosAdapter) {
-        adapter.transactions()
-                .subscribe { list -> transactions.postValue(list) }
-                .let { disposables.add(it) }
     }
 }
