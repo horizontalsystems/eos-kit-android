@@ -24,7 +24,8 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.concurrent.TimeUnit
 
-class EosKit(private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager) : BalanceManager.Listener, ActionManager.Listener {
+class EosKit(val account: String, private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager)
+    : BalanceManager.Listener, ActionManager.Listener {
 
     var irreversibleBlockHeight: Int? = actionManager.irreversibleBlockHeight
     val irreversibleBlockFlowable: Flowable<Int>
@@ -41,7 +42,7 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
         }
 
         tokens.add(newToken)
-        balanceManager.sync(newToken.token)
+        balanceManager.sync(account, newToken.token)
 
         return newToken
     }
@@ -56,10 +57,10 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
                 token.syncState = SyncState.NotSynced
             }
 
-            balanceManager.sync(token.token)
+            balanceManager.sync(account, token.token)
         }
 
-        actionManager.sync()
+        actionManager.sync(account)
     }
 
     fun stop() {
@@ -69,17 +70,17 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
 
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
-                .send(token.token, to, "${amount.setScale(4, RoundingMode.HALF_DOWN)} ${token.symbol}", memo)
+                .send(account, token.token, to, "${amount.setScale(4, RoundingMode.HALF_DOWN)} ${token.symbol}", memo)
                 .doOnSuccess {
                     Observable.timer(2, TimeUnit.SECONDS).subscribe {
-                        balanceManager.sync(token.token)
+                        balanceManager.sync(account, token.token)
                     }
                 }
     }
 
     fun transactions(token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Transaction>> {
         return actionManager
-                .getActions(token, fromSequence, limit)
+                .getActions(account, token, fromSequence, limit)
                 .map { list -> list.map { Transaction(it) } }
     }
 
@@ -131,7 +132,7 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
     }
 
     companion object {
-        fun create(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
+        fun instance(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
             val host = when (networkType) {
                 NetworkType.MainNet -> "https://eos.greymass.com"
                 NetworkType.TestNet -> "https://peer1-jungle.eosphere.io"
@@ -147,11 +148,11 @@ class EosKit(private val balanceManager: BalanceManager, private val actionManag
                 importKey(privateKey)
             }
 
-            val balanceManager = BalanceManager(account, storage, rpcProvider)
-            val actionManager = ActionManager(account, storage, rpcProvider)
-            val transactionManager = TransactionManager(account, rpcProvider, signatureProvider, serializationProvider, abiProvider)
+            val balanceManager = BalanceManager(storage, rpcProvider)
+            val actionManager = ActionManager(storage, rpcProvider)
+            val transactionManager = TransactionManager(rpcProvider, signatureProvider, serializationProvider, abiProvider)
 
-            val eosKit = EosKit(balanceManager, actionManager, transactionManager)
+            val eosKit = EosKit(account, balanceManager, actionManager, transactionManager)
 
             balanceManager.listener = eosKit
             actionManager.listener = eosKit

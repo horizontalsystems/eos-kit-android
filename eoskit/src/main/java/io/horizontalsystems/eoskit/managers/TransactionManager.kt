@@ -11,19 +11,16 @@ import one.block.eosiojava.session.TransactionSession
 import org.json.JSONObject
 
 class TransactionManager(
-        private val account: String,
         private val rpcProvider: IRPCProvider,
         private val signatureProvider: ISignatureProvider,
         private val serializationProvider: ISerializationProvider,
         private val abiProvider: IABIProvider) {
 
-    fun send(token: String, to: String, quantity: String, memo: String): Single<String> {
-        return Single.create<String> {
-            it.onSuccess(process(token, to, quantity, memo))
-        }
+    fun send(account: String, token: String, to: String, quantity: String, memo: String): Single<String> {
+        return Single.create { it.onSuccess(process(account, token, to, quantity, memo)) }
     }
 
-    private fun process(token: String, to: String, quantity: String, memo: String): String {
+    private fun process(account: String, token: String, to: String, quantity: String, memo: String): String {
 
         val session = TransactionSession(serializationProvider, rpcProvider, abiProvider, signatureProvider)
         val processor = session.transactionProcessor
@@ -38,7 +35,7 @@ class TransactionManager(
 
         val action = Action(token, "transfer", listOf(Authorization(account, "active")), reqJson.toString())
 
-        // Prepare actions with above actions. A actions can be executed with multiple actions.
+        //  Prepare actions with above actions. A actions can be executed with multiple actions.
         processor.prepare(listOf(action))
 
         //  Sign and broadcast the actions.

@@ -12,7 +12,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigDecimal
 
-class BalanceManager(private val account: String, private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
+class BalanceManager(private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
 
     interface Listener {
         fun onSyncBalance(balance: Balance)
@@ -27,8 +27,8 @@ class BalanceManager(private val account: String, private val storage: IStorage,
         return storage.getBalance(symbol)
     }
 
-    fun sync(token: String) {
-        Single.fromCallable { getBalances(token) }
+    fun sync(account: String, token: String) {
+        Single.fromCallable { getBalances(account, token) }
                 .subscribeOn(Schedulers.io())
                 .doOnError { }
                 .subscribe({ }, {
@@ -42,7 +42,7 @@ class BalanceManager(private val account: String, private val storage: IStorage,
         disposables.dispose()
     }
 
-    private fun getBalances(token: String): List<Balance> {
+    private fun getBalances(account: String, token: String): List<Balance> {
         val reqJson = JSONObject().apply {
             put("code", token)
             put("account", account)

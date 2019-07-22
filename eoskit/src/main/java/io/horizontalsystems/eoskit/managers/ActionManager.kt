@@ -12,7 +12,7 @@ import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import org.json.JSONArray
 import org.json.JSONObject
 
-class ActionManager(private val account: String, private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
+class ActionManager(private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
 
     interface Listener {
         fun onSyncActions(actions: List<Action>)
@@ -25,8 +25,8 @@ class ActionManager(private val account: String, private val storage: IStorage, 
 
     private val disposables = CompositeDisposable()
 
-    fun sync() {
-        Single.fromCallable { getActions(storage.lastAction?.sequence ?: -1) }
+    fun sync(account: String) {
+        Single.fromCallable { getActions(account, storage.lastAction?.sequence ?: -1) }
                 .subscribeOn(Schedulers.io())
                 .doOnError { it?.printStackTrace() }
                 .subscribe({ }, { it?.printStackTrace() })
@@ -37,11 +37,11 @@ class ActionManager(private val account: String, private val storage: IStorage, 
         disposables.dispose()
     }
 
-    fun getActions(token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Action>> {
+    fun getActions(account: String, token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Action>> {
         return Single.create { it.onSuccess(storage.getActions(token.token, token.symbol, account, fromSequence, limit)) }
     }
 
-    private fun getActions(position: Int) {
+    private fun getActions(account: String, position: Int) {
         val reqJson = JSONObject().apply {
             put("pos", position + 1)
             put("offset", 1000)
@@ -59,7 +59,7 @@ class ActionManager(private val account: String, private val storage: IStorage, 
         updateLastIrreversibleBlock(results.getInt("last_irreversible_block"))
 
         if (actJson.length() > 0) {
-            getActions(actions[actions.size - 1].sequence)
+            getActions(account, actions[actions.size - 1].sequence)
         }
 
         listener?.onSyncActions(actions)
