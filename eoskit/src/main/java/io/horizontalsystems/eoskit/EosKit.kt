@@ -2,6 +2,7 @@ package io.horizontalsystems.eoskit
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import io.horizontalsystems.eoskit.core.InvalidPrivateKey
 import io.horizontalsystems.eoskit.core.Token
 import io.horizontalsystems.eoskit.managers.ActionManager
 import io.horizontalsystems.eoskit.managers.BalanceManager
@@ -16,7 +17,9 @@ import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
+import one.block.eosiojava.error.utilities.EOSFormatterError
 import one.block.eosiojava.implementations.ABIProviderImpl
+import one.block.eosiojava.utilities.EOSFormatter
 import one.block.eosiojavaabieosserializationprovider.AbiEosSerializationProviderImpl
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
@@ -131,6 +134,7 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
     }
 
     companion object {
+
         fun instance(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
             val host = when (networkType) {
                 NetworkType.MainNet -> "https://eos.greymass.com"
@@ -163,6 +167,16 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
             SQLiteDatabase.deleteDatabase(context.getDatabasePath(getDatabaseName(networkType, walletId)))
         }
 
-        private fun getDatabaseName(networkType: NetworkType, walletId: String): String = "Eos-$networkType-$walletId"
+        fun validatePrivateKey(key: String) {
+            try {
+                EOSFormatter.convertEOSPrivateKeyToPEMFormat(key)
+            } catch (e: EOSFormatterError) {
+                throw InvalidPrivateKey()
+            }
+        }
+
+        private fun getDatabaseName(networkType: NetworkType, walletId: String): String {
+            return "Eos-$networkType-$walletId"
+        }
     }
 }
