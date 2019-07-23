@@ -62,7 +62,9 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
             getActions(account, actions[actions.size - 1].sequence)
         }
 
-        listener?.onSyncActions(actions)
+        val filteredActions = actions.filter { it.receiver == account && it.name == "transfer" }
+
+        listener?.onSyncActions(filteredActions)
     }
 
     private fun parse(actions: JSONArray): List<Action> {

@@ -28,9 +28,7 @@ class SendTransactionFragment : Fragment() {
 
         activity?.let {
             viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
-            viewModel.adapters.find { it.coin == "EOS" }?.let { adr ->
-                adapter = adr
-            }
+            adapter = viewModel.adapters.first()
         }
     }
 

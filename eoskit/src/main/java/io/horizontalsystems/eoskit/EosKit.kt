@@ -21,7 +21,6 @@ import one.block.eosiojavaabieosserializationprovider.AbiEosSerializationProvide
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.util.concurrent.TimeUnit
 
 class EosKit(val account: String, private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager)
@@ -70,7 +69,7 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
 
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
-                .send(account, token.token, to, "${amount.setScale(4, RoundingMode.HALF_DOWN)} ${token.symbol}", memo)
+                .send(account, token.token, to, "${amount.setScale(4)} ${token.symbol}", memo)
                 .doOnSuccess {
                     Observable.timer(2, TimeUnit.SECONDS).subscribe {
                         balanceManager.sync(account, token.token)
