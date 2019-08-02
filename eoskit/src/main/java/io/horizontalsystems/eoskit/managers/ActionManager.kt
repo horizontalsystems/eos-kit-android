@@ -38,7 +38,7 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
     }
 
     fun getActions(account: String, token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Action>> {
-        return Single.create { it.onSuccess(storage.getActions(token.token, token.symbol, account, fromSequence, limit)) }
+        return Single.just(storage.getActions(token.token, token.symbol, account, fromSequence, limit))
     }
 
     private fun getActions(account: String, position: Int) {
