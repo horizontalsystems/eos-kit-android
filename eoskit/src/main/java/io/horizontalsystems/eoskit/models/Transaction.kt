@@ -4,7 +4,7 @@ class Transaction(action: Action) {
     val id: String = action.transactionId
     val blockNumber: Int = action.blockNumber
     val actionSequence: Int = action.sequence
-    val date: String = action.blockTime
+    val date: Long = action.blockTime
 
     val from: String? = action.from
     val to: String? = action.to

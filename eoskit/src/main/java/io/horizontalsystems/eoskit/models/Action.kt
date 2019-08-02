@@ -11,7 +11,7 @@ class Action(
         val account: String,
         val transactionId: String,
         val blockNumber: Int,
-        val blockTime: String,
+        val blockTime: Long,
 
         val receiver: String,
         val from: String?,

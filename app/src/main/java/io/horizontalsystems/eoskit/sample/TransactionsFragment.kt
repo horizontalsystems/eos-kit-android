@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.horizontalsystems.eoskit.models.Transaction
+import java.util.*
 
 class TransactionsFragment : Fragment() {
 
@@ -117,7 +118,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             - From: ${tx.from}
             - To: ${tx.to}
             - Amount: ${tx.amount} ${tx.symbol}
-            - Time: ${tx.date}
+            - Time: ${Date(tx.date)}
             - Memo: ${tx.memo}
             - Action Sequence: ${tx.actionSequence}
         """

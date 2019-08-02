@@ -11,6 +11,8 @@ import okhttp3.RequestBody
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.*
 
 class ActionManager(private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
 
@@ -24,6 +26,9 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
         get() = storage.lastIrreversibleBlock?.height
 
     private val disposables = CompositeDisposable()
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     fun sync(account: String) {
         Single.fromCallable { getActions(account, storage.lastAction?.sequence ?: -1) }
@@ -81,7 +86,7 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
 
                 val transactionId = trace.getString("trx_id")
                 val blockNumber = trace.getInt("block_num")
-                val blockTime = trace.getString("block_time")
+                val timestamp = dateFormat.parse(trace.getString("block_time")).time
 
                 val act = trace.getJSONObject("act")
                 val type = act.optString("name")
@@ -104,7 +109,7 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
                         name = type,
                         transactionId = transactionId,
                         blockNumber = blockNumber,
-                        blockTime = blockTime,
+                        blockTime = timestamp,
                         account = token,
 
                         receiver = receiver,
