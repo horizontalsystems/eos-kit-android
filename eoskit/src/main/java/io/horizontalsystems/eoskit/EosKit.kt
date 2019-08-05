@@ -72,7 +72,7 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
 
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
-                .send(account, token.token, to, "${amount.setScale(4)} ${token.symbol}", memo)
+                .send(account, token.token, to, "$amount ${token.symbol}", memo)
                 .doOnSuccess {
                     Observable.timer(2, TimeUnit.SECONDS).subscribe {
                         balanceManager.sync(account, token.token)
