@@ -3,6 +3,7 @@ package io.horizontalsystems.eoskit.core
 import one.block.eosiojava.error.EosioError
 import one.block.eosiojava.models.rpcProvider.response.RPCResponseError
 import one.block.eosiojavarpcprovider.error.EosioJavaRpcProviderCallError
+import java.math.BigInteger
 
 object ErrorUtils {
 
@@ -36,7 +37,6 @@ object ErrorUtils {
         val rpcError =
             getErrorObject<EosioJavaRpcProviderCallError>(EosioJavaRpcProviderCallError::class.java, error)
         return rpcError?.rpcResponseError
-
     }
 
     /**
@@ -53,6 +53,23 @@ object ErrorUtils {
             }
         }
 
-        return BackendError(error.message, detail.toString(), error.error.code)
+        return getBackendError(error.message, detail.toString(), error.error.code)
+    }
+
+    private fun getBackendError(message: String, detail: String, code: BigInteger): BackendError {
+        val error = when (code) {
+            3050003.toBigInteger() -> when {
+                detail.contains("account does not exist") -> BackendError.AccountNotExistError(message, detail, code)
+                detail.contains("overdrawn") -> BackendError.BalanceOverdrawnError(message, detail, code)
+                detail.contains("symbol precision mismatch") -> BackendError.SymbolPrecisionMismatchError(message, detail, code)
+                else -> null
+            }
+            3050001.toBigInteger() -> when {
+                detail.contains("insufficient ram") -> BackendError.InsufficientRamError(message, detail, code)
+                else -> null
+            }
+            else -> null
+        }
+        return error ?: BackendError.MiscellaneousError(message, detail, code)
     }
 }

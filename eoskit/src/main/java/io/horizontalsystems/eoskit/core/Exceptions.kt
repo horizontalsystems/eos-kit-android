@@ -4,4 +4,13 @@ import java.math.BigInteger
 
 class InvalidPrivateKey : Exception()
 
-class BackendError(override val message: String, val detail: String, val code: BigInteger): Exception(message)
+sealed class BackendError : Exception() {
+    abstract val detail: String
+    abstract val code: BigInteger
+
+    class BalanceOverdrawnError(override val message: String, override val detail: String, override val code: BigInteger) : BackendError()
+    class SymbolPrecisionMismatchError(override val message: String, override val detail: String, override val code: BigInteger) : BackendError()
+    class AccountNotExistError(override val message: String, override val detail: String, override val code: BigInteger) : BackendError()
+    class InsufficientRamError(override val message: String, override val detail: String, override val code: BigInteger) : BackendError()
+    class MiscellaneousError(override val message: String, override val detail: String, override val code: BigInteger) : BackendError()
+}

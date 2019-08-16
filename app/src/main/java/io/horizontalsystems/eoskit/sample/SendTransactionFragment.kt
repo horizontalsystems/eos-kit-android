@@ -97,15 +97,11 @@ class SendTransactionFragment : Fragment() {
     }
 
     private fun parseBackendError(sendError: BackendError) {
-        when {
-            sendError.code == 3050003.toBigInteger() -> when {
-                sendError.detail.contains("account does not exist") -> Log.e("SendTxFrag", "account does not exist")
-                sendError.detail.contains("overdrawn") -> Log.e("SendTxFrag", "balance overdrawn")
-                sendError.detail.contains("symbol precision mismatch") -> Log.e("SendTxFrag", "symbol precision mismatch")
-            }
-            sendError.code == 3050001.toBigInteger() -> when {
-                sendError.detail.contains("insufficient ram") -> Log.e("SendTxFrag", "insufficient ram")
-            }
+        when(sendError) {
+            is BackendError.BalanceOverdrawnError -> Log.e("SendTxFrag", "balance overdrawn")
+            is BackendError.AccountNotExistError -> Log.e("SendTxFrag", "account does not exist")
+            is BackendError.SymbolPrecisionMismatchError -> Log.e("SendTxFrag", "symbol precision mismatch")
+            is BackendError.InsufficientRamError -> Log.e("SendTxFrag", "insufficient ram")
         }
     }
 
