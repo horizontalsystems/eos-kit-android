@@ -70,6 +70,7 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
         actionManager.stop()
     }
 
+    @Throws
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
                 .send(account, token.token, to, "$amount ${token.symbol}", memo)

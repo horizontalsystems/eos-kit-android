@@ -34,6 +34,7 @@ class EosAdapter(private val eosKit: EosKit, tokenName: String, tokenSymbol: Str
     val irreversibleBlockFlowable: Flowable<Unit>
         get() = eosKit.irreversibleBlockFlowable.map { Unit }
 
+    @Throws
     fun send(to: String, amount: BigDecimal, memo: String): Single<String> {
         return eosKit.send(token, to, amount, memo)
     }

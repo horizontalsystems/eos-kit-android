@@ -1,6 +1,8 @@
 package io.horizontalsystems.eoskit.managers
 
+import io.horizontalsystems.eoskit.core.ErrorUtils
 import io.reactivex.Single
+import one.block.eosiojava.error.session.TransactionSignAndBroadCastError
 import one.block.eosiojava.interfaces.IABIProvider
 import one.block.eosiojava.interfaces.IRPCProvider
 import one.block.eosiojava.interfaces.ISerializationProvider
@@ -11,15 +13,18 @@ import one.block.eosiojava.session.TransactionSession
 import org.json.JSONObject
 
 class TransactionManager(
-        private val rpcProvider: IRPCProvider,
-        private val signatureProvider: ISignatureProvider,
-        private val serializationProvider: ISerializationProvider,
-        private val abiProvider: IABIProvider) {
+    private val rpcProvider: IRPCProvider,
+    private val signatureProvider: ISignatureProvider,
+    private val serializationProvider: ISerializationProvider,
+    private val abiProvider: IABIProvider
+) {
 
+    @Throws
     fun send(account: String, token: String, to: String, quantity: String, memo: String): Single<String> {
         return Single.create { it.onSuccess(process(account, token, to, quantity, memo)) }
     }
 
+    @Throws
     private fun process(account: String, token: String, to: String, quantity: String, memo: String): String {
 
         val session = TransactionSession(serializationProvider, rpcProvider, abiProvider, signatureProvider)
@@ -35,12 +40,21 @@ class TransactionManager(
 
         val action = Action(token, "transfer", listOf(Authorization(account, "active")), reqJson.toString())
 
-        //  Prepare actions with above actions. A actions can be executed with multiple actions.
-        processor.prepare(listOf(action))
+        try {
+            //  Prepare actions with above actions. A actions can be executed with multiple actions.
+            processor.prepare(listOf(action))
+            //  Sign and broadcast the actions.
+            val response = processor.signAndBroadcast()
+            return response.transactionId
+        } catch (e: TransactionSignAndBroadCastError) {
+            val rpcResponseError = ErrorUtils.getBackendError(e)
+            if (rpcResponseError != null) {
+                throw ErrorUtils.getBackendErrorFromResponse(rpcResponseError)
+            }
+        }
 
-        //  Sign and broadcast the actions.
-        val response = processor.signAndBroadcast()
-
-        return response.transactionId
+        throw Exception()
     }
+
+
 }
