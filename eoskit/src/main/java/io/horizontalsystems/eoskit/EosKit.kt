@@ -26,12 +26,8 @@ import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
 import java.math.BigDecimal
 import java.util.concurrent.TimeUnit
 
-class EosKit(
-    val account: String,
-    private val balanceManager: BalanceManager,
-    private val actionManager: ActionManager,
-    private val transactionManager: TransactionManager
-) : BalanceManager.Listener, ActionManager.Listener {
+class EosKit(val account: String, private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager)
+    : BalanceManager.Listener, ActionManager.Listener {
 
     var irreversibleBlockHeight: Int? = actionManager.irreversibleBlockHeight
     val irreversibleBlockFlowable: Flowable<Int>
@@ -77,18 +73,18 @@ class EosKit(
     @Throws
     fun send(token: Token, to: String, amount: BigDecimal, memo: String): Single<String> {
         return transactionManager
-            .send(account, token.token, to, "$amount ${token.symbol}", memo)
-            .doOnSuccess {
-                Observable.timer(2, TimeUnit.SECONDS).subscribe {
-                    balanceManager.sync(account, token.token)
+                .send(account, token.token, to, "$amount ${token.symbol}", memo)
+                .doOnSuccess {
+                    Observable.timer(2, TimeUnit.SECONDS).subscribe {
+                        balanceManager.sync(account, token.token)
+                    }
                 }
-            }
     }
 
     fun transactions(token: Token, fromSequence: Int? = null, limit: Int? = null): Single<List<Transaction>> {
         return actionManager
-            .getActions(account, token, fromSequence, limit)
-            .map { list -> list.map { Transaction(it) } }
+                .getActions(account, token, fromSequence, limit)
+                .map { list -> list.map { Transaction(it) } }
     }
 
     // BalanceManager Listener
@@ -109,10 +105,10 @@ class EosKit(
     override fun onSyncActions(actions: List<Action>) {
         actions.groupBy { it.account }.forEach { (token, acts) ->
             acts.map { Transaction(it) }
-                .groupBy { it.symbol }
-                .forEach { (symbol, transactions) ->
-                    tokenBy(token, symbol)?.transactionsSubject?.onNext(transactions)
-                }
+                    .groupBy { it.symbol }
+                    .forEach { (symbol, transactions) ->
+                        tokenBy(token, symbol)?.transactionsSubject?.onNext(transactions)
+                    }
         }
     }
 
@@ -140,13 +136,7 @@ class EosKit(
 
     companion object {
 
-        fun instance(
-            context: Context,
-            account: String,
-            privateKey: String,
-            networkType: NetworkType = NetworkType.MainNet,
-            walletId: String = "unique-id"
-        ): EosKit {
+        fun instance(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
             val host = when (networkType) {
                 NetworkType.MainNet -> "https://eos.greymass.com"
                 NetworkType.TestNet -> "https://peer1-jungle.eosphere.io"
@@ -164,8 +154,7 @@ class EosKit(
 
             val balanceManager = BalanceManager(storage, rpcProvider)
             val actionManager = ActionManager(storage, rpcProvider)
-            val transactionManager =
-                TransactionManager(rpcProvider, signatureProvider, serializationProvider, abiProvider)
+            val transactionManager = TransactionManager(rpcProvider, signatureProvider, serializationProvider, abiProvider)
 
             val eosKit = EosKit(account, balanceManager, actionManager, transactionManager)
 
