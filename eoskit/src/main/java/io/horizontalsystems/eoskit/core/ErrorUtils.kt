@@ -1,5 +1,6 @@
 package io.horizontalsystems.eoskit.core
 
+import io.horizontalsystems.eoskit.core.exceptions.BackendError
 import one.block.eosiojava.error.EosioError
 import one.block.eosiojava.models.rpcProvider.response.RPCResponseError
 import one.block.eosiojavarpcprovider.error.EosioJavaRpcProviderCallError
@@ -62,6 +63,7 @@ object ErrorUtils {
                 detail.contains("account does not exist") -> BackendError.AccountNotExistError(message, detail, code)
                 detail.contains("overdrawn") -> BackendError.BalanceOverdrawnError(message, detail, code)
                 detail.contains("symbol precision mismatch") -> BackendError.SymbolPrecisionMismatchError(message, detail, code)
+                detail.contains("cannot transfer to self") -> BackendError.TransferToSelfError(message, detail, code)
                 else -> null
             }
             3050001.toBigInteger() -> when {
