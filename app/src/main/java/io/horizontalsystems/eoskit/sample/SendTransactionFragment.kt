@@ -10,7 +10,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import io.horizontalsystems.eoskit.core.BackendError
+import io.horizontalsystems.eoskit.core.exceptions.BackendError
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import java.math.RoundingMode
