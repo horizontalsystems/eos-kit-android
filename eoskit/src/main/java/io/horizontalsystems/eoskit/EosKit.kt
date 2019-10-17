@@ -26,7 +26,12 @@ import one.block.eosiosoftkeysignatureprovider.SoftKeySignatureProviderImpl
 import java.math.BigDecimal
 import java.util.concurrent.TimeUnit
 
-class EosKit(val account: String, private val balanceManager: BalanceManager, private val actionManager: ActionManager, private val transactionManager: TransactionManager)
+class EosKit(
+        val account: String,
+        private val balanceManager: BalanceManager,
+        private val actionManager: ActionManager,
+        private val transactionManager: TransactionManager,
+        private val networkType: NetworkType)
     : BalanceManager.Listener, ActionManager.Listener {
 
     var irreversibleBlockHeight: Int? = actionManager.irreversibleBlockHeight
@@ -87,6 +92,25 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
                 .map { list -> list.map { Transaction(it) } }
     }
 
+    fun statusInfo(): Map<String, Any> {
+        val statusInfo = LinkedHashMap<String, Any>()
+
+        statusInfo["Synced Until"] = "Irreversible Block Height ${irreversibleBlockHeight ?: "N/A"}"
+        statusInfo["Sync State"] = getKitSyncState()
+        statusInfo["RPC Host"] = getRpcHost(networkType)
+
+        return statusInfo
+    }
+
+    private fun getKitSyncState(): String {
+        val syncState = when {
+            tokens.any { it.syncState == SyncState.Syncing } -> SyncState.Syncing
+            tokens.any { it.syncState == SyncState.NotSynced } -> SyncState.NotSynced
+            else -> SyncState.Synced
+        }
+        return syncState.name
+    }
+
     // BalanceManager Listener
 
     override fun onSyncBalance(balance: Balance) {
@@ -136,16 +160,16 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
 
     companion object {
 
-        fun instance(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
-            val host = when (networkType) {
-                NetworkType.MainNet -> "https://eos.greymass.com"
-                NetworkType.TestNet -> "https://peer1-jungle.eosphere.io"
-            }
+        private fun getRpcHost(networkType: NetworkType): String = when (networkType) {
+            NetworkType.MainNet -> "https://eos.greymass.com"
+            NetworkType.TestNet -> "https://peer1-jungle.eosphere.io"
+        }
 
+        fun instance(context: Context, account: String, privateKey: String, networkType: NetworkType = NetworkType.MainNet, walletId: String = "unique-id"): EosKit {
             val database = KitDatabase.create(context, getDatabaseName(networkType, walletId))
             val storage = Storage(database)
 
-            val rpcProvider = EosioJavaRpcProviderImpl(host)
+            val rpcProvider = EosioJavaRpcProviderImpl(getRpcHost(networkType))
             val serializationProvider = AbiEosSerializationProviderImpl()
             val abiProvider = ABIProviderImpl(rpcProvider, serializationProvider)
             val signatureProvider = SoftKeySignatureProviderImpl().apply {
@@ -156,7 +180,7 @@ class EosKit(val account: String, private val balanceManager: BalanceManager, pr
             val actionManager = ActionManager(storage, rpcProvider)
             val transactionManager = TransactionManager(rpcProvider, signatureProvider, serializationProvider, abiProvider)
 
-            val eosKit = EosKit(account, balanceManager, actionManager, transactionManager)
+            val eosKit = EosKit(account, balanceManager, actionManager, transactionManager, networkType)
 
             balanceManager.listener = eosKit
             actionManager.listener = eosKit
