@@ -95,7 +95,7 @@ class EosKit(
     fun statusInfo(): Map<String, Any> {
         val statusInfo = LinkedHashMap<String, Any>()
 
-        statusInfo["Synced Until"] = "Irreversible Block Height ${irreversibleBlockHeight ?: "N/A"}"
+        statusInfo["Irreversible Block Height"] = irreversibleBlockHeight ?: "N/A"
         statusInfo["Sync State"] = getKitSyncState()
         statusInfo["RPC Host"] = getRpcHost(networkType)
 
