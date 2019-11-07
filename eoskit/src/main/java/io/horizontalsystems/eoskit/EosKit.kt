@@ -60,11 +60,10 @@ class EosKit(
 
     fun refresh() {
         tokens.forEach { token ->
-            if (token.syncState != SyncState.Synced) {
-                token.syncState = SyncState.NotSynced
+            if (token.syncState != SyncState.Syncing) {
+                token.syncState = SyncState.Syncing
+                balanceManager.sync(account, token.token)
             }
-
-            balanceManager.sync(account, token.token)
         }
 
         actionManager.sync(account)
