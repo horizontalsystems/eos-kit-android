@@ -66,6 +66,10 @@ object ErrorUtils {
                 detail.contains("cannot transfer to self") -> BackendError.TransferToSelfError(message, detail, code)
                 else -> null
             }
+            3080004.toBigInteger() -> when {
+                detail.contains("greater than the maximum billable CPU") -> BackendError.InsufficientCpuError(message, detail, code)
+                else -> null
+            }
             3050001.toBigInteger() -> when {
                 detail.contains("insufficient ram") -> BackendError.InsufficientRamError(message, detail, code)
                 else -> null
