@@ -160,7 +160,7 @@ class EosKit(
     companion object {
 
         private fun getRpcHost(networkType: NetworkType): String = when (networkType) {
-            NetworkType.MainNet -> "https://eosbp.atticlab.net"
+            NetworkType.MainNet -> "https://eos.greymass.com"
             NetworkType.TestNet -> "https://peer1-jungle.eosphere.io"
         }
 
