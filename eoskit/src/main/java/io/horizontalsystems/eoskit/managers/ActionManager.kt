@@ -16,6 +16,8 @@ import java.util.*
 
 class ActionManager(private val storage: IStorage, private val rpcProvider: EosioJavaRpcProviderImpl) {
 
+    private val MAX_RECORD_FETCH_COUNT: Short = 100
+
     interface Listener {
         fun onSyncActions(actions: List<Action>)
         fun onChangeLastIrreversibleBlock(height: Int)
@@ -49,7 +51,7 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
     private fun getActions(account: String, position: Int) {
         val reqJson = JSONObject().apply {
             put("pos", position + 1)
-            put("offset", 1000)
+            put("offset", MAX_RECORD_FETCH_COUNT)
             put("account_name", account)
         }
 
