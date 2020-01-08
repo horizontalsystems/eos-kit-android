@@ -60,13 +60,13 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
         val results = JSONObject(resJson)
 
         val actJson = results.getJSONArray("actions")
-        val actions = parse(actJson)
+        val (actionLastSequence, actions) = parse(actJson)
 
         storage.setActions(actions)
         updateLastIrreversibleBlock(results.getInt("last_irreversible_block"))
 
         if (actJson.length() > 0) {
-            getActions(account, actions[actions.size - 1].sequence)
+            getActions(account, actionLastSequence)
         }
 
         val filteredActions = actions.filter { it.receiver == account && it.name == "transfer" }
@@ -74,13 +74,14 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
         listener?.onSyncActions(filteredActions)
     }
 
-    private fun parse(actions: JSONArray): List<Action> {
+    private fun parse(actions: JSONArray): Pair<Int,List<Action>> {
         val transactions = mutableListOf<Action>()
+        var actionLastSequence: Int = 0
 
         for (i in 0 until actions.length()) {
             try {
                 val action = actions.getJSONObject(i)
-                val actionSequence = action.getInt("account_action_seq")
+                actionLastSequence = action.getInt("account_action_seq")
                 val trace = action.getJSONObject("action_trace")
 
                 val receipt = trace.getJSONObject("receipt")
@@ -107,7 +108,7 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
                 }
 
                 transactions.add(Action(
-                        sequence = actionSequence,
+                        sequence = actionLastSequence,
                         name = type,
                         transactionId = transactionId,
                         blockNumber = blockNumber,
@@ -126,7 +127,7 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
             }
         }
 
-        return transactions
+        return Pair(actionLastSequence, transactions)
     }
 
     private fun updateLastIrreversibleBlock(height: Int) {
