@@ -60,18 +60,17 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
         val results = JSONObject(resJson)
 
         val actJson = results.getJSONArray("actions")
-        val (actionLastSequence, actions) = parse(actJson)
-
-        storage.setActions(actions)
         updateLastIrreversibleBlock(results.getInt("last_irreversible_block"))
 
-        if (actJson.length() > 0) {
+        val (actionLastSequence, actions) = parse(actJson)
+        if (actions.isNotEmpty()) {
+            storage.setActions(actions)
+            val filteredActions = actions.filter { it.receiver == account && it.name == "transfer" }
+
+            listener?.onSyncActions(filteredActions)
+
             getActions(account, actionLastSequence)
         }
-
-        val filteredActions = actions.filter { it.receiver == account && it.name == "transfer" }
-
-        listener?.onSyncActions(filteredActions)
     }
 
     private fun parse(actions: JSONArray): Pair<Int,List<Action>> {
