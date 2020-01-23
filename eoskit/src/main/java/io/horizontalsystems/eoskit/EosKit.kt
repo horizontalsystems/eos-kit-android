@@ -44,12 +44,11 @@ class EosKit(
     fun register(token: String, symbol: String): Token {
         val newBalance = balanceManager.getBalance(symbol)
         val newToken = Token(token, symbol).apply {
-            syncState = SyncState.NotSynced
             balance = newBalance?.value ?: BigDecimal(0)
         }
 
         tokens.add(newToken)
-        balanceManager.sync(account, newToken.token)
+        balanceManager.sync(account, newToken)
 
         return newToken
     }
@@ -60,10 +59,7 @@ class EosKit(
 
     fun refresh() {
         tokens.forEach { token ->
-            if (token.syncState != SyncState.Syncing) {
-                token.syncState = SyncState.Syncing
-                balanceManager.sync(account, token.token)
-            }
+            balanceManager.sync(account, token)
         }
 
         actionManager.sync(account)
@@ -80,7 +76,7 @@ class EosKit(
                 .send(account, token.token, to, "$amount ${token.symbol}", memo)
                 .doOnSuccess {
                     Observable.timer(2, TimeUnit.SECONDS).subscribe {
-                        balanceManager.sync(account, token.token)
+                        balanceManager.sync(account, token)
                     }
                 }
     }

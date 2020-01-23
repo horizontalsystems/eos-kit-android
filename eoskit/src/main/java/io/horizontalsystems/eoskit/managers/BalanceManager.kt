@@ -1,6 +1,8 @@
 package io.horizontalsystems.eoskit.managers
 
+import io.horizontalsystems.eoskit.EosKit
 import io.horizontalsystems.eoskit.core.IStorage
+import io.horizontalsystems.eoskit.core.Token
 import io.horizontalsystems.eoskit.models.Balance
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -27,13 +29,19 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
         return storage.getBalance(symbol)
     }
 
-    fun sync(account: String, token: String) {
-        Single.fromCallable { getBalances(account, token) }
+    fun sync(account: String, token: Token) {
+        if (token.syncState == EosKit.SyncState.Syncing) {
+            return
+        }
+
+        token.syncState = EosKit.SyncState.Syncing
+
+        Single.fromCallable { getBalances(account, token.token) }
                 .subscribeOn(Schedulers.io())
                 .doOnError { }
                 .subscribe({ }, {
                     it?.printStackTrace()
-                    listener?.onSyncBalanceFail(token)
+                    listener?.onSyncBalanceFail(token.token)
                 })
                 .let { disposables.add(it) }
     }
