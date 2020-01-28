@@ -36,7 +36,7 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
 
         token.syncState = EosKit.SyncState.Syncing
 
-        Single.fromCallable { getBalances(account, token.token) }
+        Single.fromCallable { getBalances(account, token) }
                 .subscribeOn(Schedulers.io())
                 .doOnError { }
                 .subscribe({ }, {
@@ -50,9 +50,9 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
         disposables.dispose()
     }
 
-    private fun getBalances(account: String, token: String): List<Balance> {
+    private fun getBalances(account: String, token: Token): List<Balance> {
         val reqJson = JSONObject().apply {
-            put("code", token)
+            put("code", token.token)
             put("account", account)
         }
 
@@ -64,11 +64,16 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
 
         for (i in 0 until jsonArray.length()) {
             val element = jsonArray.getString(i).split(" ")
-            balances.add(Balance(element[1], BigDecimal(element[0]), token))
+            balances.add(Balance(element[1], BigDecimal(element[0]), token.token))
         }
 
-        storage.setBalances(balances)
-        balances.forEach { listener?.onSyncBalance(it) }
+        if (balances.isEmpty()) {
+            listener?.onSyncBalance(Balance(token.symbol, BigDecimal.ZERO, token.token))
+        } else {
+            storage.setBalances(balances)
+
+            balances.forEach { listener?.onSyncBalance(it) }
+        }
 
         return balances
     }
