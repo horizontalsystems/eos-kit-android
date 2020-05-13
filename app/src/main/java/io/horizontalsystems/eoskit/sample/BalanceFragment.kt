@@ -84,12 +84,7 @@ class ViewHolderToken(containerView: View) : RecyclerView.ViewHolder(containerVi
     private val summaryValue = containerView.findViewById<TextView>(R.id.summaryValue)
 
     fun bind(adapter: EosAdapter, irreversibleBlockHeight: Int) {
-        val syncState = when (adapter.syncState) {
-            EosKit.SyncState.Synced -> "Synced"
-            EosKit.SyncState.Syncing -> "Syncing"
-            EosKit.SyncState.NotSynced -> "NotSynced"
-            else -> "null"
-        }
+        val syncState = adapter.syncState.getName()
 
         tokeHeader.text = "${adapter.name} - ${adapter.coin}"
 

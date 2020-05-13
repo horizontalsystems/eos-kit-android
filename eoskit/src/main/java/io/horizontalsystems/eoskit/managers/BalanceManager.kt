@@ -9,6 +9,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import one.block.eosiojava.error.rpcProvider.RpcProviderError
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import org.json.JSONArray
 import org.json.JSONObject
@@ -18,7 +19,7 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
 
     interface Listener {
         fun onSyncBalance(balance: Balance)
-        fun onSyncBalanceFail(token: String)
+        fun onSyncBalanceFail(token: String, error: Throwable)
     }
 
     var listener: Listener? = null
@@ -37,13 +38,12 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
         token.syncState = EosKit.SyncState.Syncing
 
         Single.fromCallable { getBalances(account, token) }
-                .subscribeOn(Schedulers.io())
-                .doOnError { }
-                .subscribe({ }, {
-                    it?.printStackTrace()
-                    listener?.onSyncBalanceFail(token.token)
-                })
-                .let { disposables.add(it) }
+            .subscribeOn(Schedulers.io())
+            .subscribe({ }, {
+                it?.printStackTrace()
+                listener?.onSyncBalanceFail(token.token, it)
+            })
+            .let { disposables.add(it) }
     }
 
     fun stop() {
@@ -57,7 +57,16 @@ class BalanceManager(private val storage: IStorage, private val rpcProvider: Eos
         }
 
         val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), reqJson.toString())
-        val resJson = rpcProvider.getCurrencyBalance(reqBody)
+
+        val resJson = try {
+            rpcProvider.getCurrencyBalance(reqBody)
+        } catch (e: RpcProviderError) {
+            var errorMessage = e.message
+            e.cause?.message?.let {
+                errorMessage += "\n$it"
+            }
+            throw Throwable(errorMessage)
+        }
 
         val balances = mutableListOf<Balance>()
         val jsonArray = JSONArray(resJson)
