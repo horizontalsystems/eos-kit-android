@@ -18,7 +18,7 @@ class Token(val token: String, val symbol: String) {
     val transactionsFlowable: Flowable<List<Transaction>>
         get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    var syncState: SyncState = SyncState.NotSynced
+    var syncState: SyncState = SyncState.NotSynced(NotStartedState())
         set(value) {
             if (field != value) {
                 field = value

@@ -3,6 +3,7 @@ package io.horizontalsystems.eoskit
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import io.horizontalsystems.eoskit.core.InvalidPrivateKey
+import io.horizontalsystems.eoskit.core.NotStartedState
 import io.horizontalsystems.eoskit.core.Token
 import io.horizontalsystems.eoskit.managers.ActionManager
 import io.horizontalsystems.eoskit.managers.BalanceManager
@@ -100,10 +101,10 @@ class EosKit(
     private fun getKitSyncState(): String {
         val syncState = when {
             tokens.any { it.syncState == SyncState.Syncing } -> SyncState.Syncing
-            tokens.any { it.syncState == SyncState.NotSynced } -> SyncState.NotSynced
+            tokens.any { it.syncState is SyncState.NotSynced } -> SyncState.NotSynced(NotStartedState())
             else -> SyncState.Synced
         }
-        return syncState.name
+        return syncState.getName()
     }
 
     // BalanceManager Listener
@@ -115,8 +116,8 @@ class EosKit(
         }
     }
 
-    override fun onSyncBalanceFail(token: String) {
-        tokens.find { it.token == token }?.syncState = SyncState.NotSynced
+    override fun onSyncBalanceFail(token: String, error: Throwable) {
+        tokens.find { it.token == token }?.syncState = SyncState.NotSynced(error)
     }
 
     // ActionManager Listener
@@ -142,10 +143,18 @@ class EosKit(
 
     // SyncState
 
-    enum class SyncState {
-        Synced,
-        NotSynced,
-        Syncing
+    sealed class SyncState {
+        object Synced: SyncState()
+        class NotSynced(val error: Throwable): SyncState()
+        object Syncing: SyncState()
+
+        fun getName(): String{
+            return when(this){
+                Synced -> "Synced"
+                Syncing -> "Syncing"
+                is NotSynced -> "Not Synced"
+            }
+        }
     }
 
     enum class NetworkType(chainId: String) {
