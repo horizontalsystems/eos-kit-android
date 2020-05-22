@@ -72,13 +72,10 @@ class EosKit(
         actionManager.stop()
     }
 
+    //should run in background
     @Throws
     fun validate(account: String){
-        try {
-            actionManager.validateAccount(account)
-        } catch (e: Throwable) {
-            throw InvalidAccountName()
-        }
+        actionManager.validateAccount(account)
     }
 
     @Throws

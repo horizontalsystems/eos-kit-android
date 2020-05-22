@@ -1,6 +1,7 @@
 package io.horizontalsystems.eoskit.managers
 
 import io.horizontalsystems.eoskit.core.IStorage
+import io.horizontalsystems.eoskit.core.InvalidAccountName
 import io.horizontalsystems.eoskit.core.Token
 import io.horizontalsystems.eoskit.models.Action
 import io.reactivex.Single
@@ -53,12 +54,16 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
 
         try {
             rpcProvider.getAccount(reqBody)
-        } catch (e: RpcProviderError) {
-            var errorMessage = e.message
-            e.cause?.message?.let {
+        } catch (error: RpcProviderError) {
+            var errorMessage = error.message
+            error.cause?.message?.let {
                 errorMessage += "\n$it"
             }
-            throw Throwable(errorMessage)
+            if (errorMessage?.contains("error get account", true) == true) {
+                throw InvalidAccountName()
+            }
+
+            throw error
         }
     }
 
