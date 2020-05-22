@@ -8,6 +8,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import one.block.eosiojava.error.rpcProvider.RpcProviderError
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
 import org.json.JSONArray
 import org.json.JSONObject
@@ -38,6 +39,27 @@ class ActionManager(private val storage: IStorage, private val rpcProvider: Eosi
                 .doOnError { it?.printStackTrace() }
                 .subscribe({ }, { it?.printStackTrace() })
                 .let { disposables.add(it) }
+    }
+
+    fun validateAccount(account: String) {
+        val reqJson = JSONObject().apply {
+            put("account_name", account)
+        }
+
+        val reqBody = RequestBody.create(
+            MediaType.parse("application/json; charset=utf-8"),
+            reqJson.toString()
+        )
+
+        try {
+            rpcProvider.getAccount(reqBody)
+        } catch (e: RpcProviderError) {
+            var errorMessage = e.message
+            e.cause?.message?.let {
+                errorMessage += "\n$it"
+            }
+            throw Throwable(errorMessage)
+        }
     }
 
     fun stop() {

@@ -2,6 +2,7 @@ package io.horizontalsystems.eoskit
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import io.horizontalsystems.eoskit.core.InvalidAccountName
 import io.horizontalsystems.eoskit.core.InvalidPrivateKey
 import io.horizontalsystems.eoskit.core.NotStartedState
 import io.horizontalsystems.eoskit.core.Token
@@ -69,6 +70,15 @@ class EosKit(
     fun stop() {
         balanceManager.stop()
         actionManager.stop()
+    }
+
+    @Throws
+    fun validate(account: String){
+        try {
+            actionManager.validateAccount(account)
+        } catch (e: Throwable) {
+            throw InvalidAccountName()
+        }
     }
 
     @Throws
